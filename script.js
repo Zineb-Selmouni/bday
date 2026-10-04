@@ -19,10 +19,10 @@
     "I'm not mad, just disappointed. Okay, a bit mad.",
   ];
   const RANKS = [
-    { min: 1, title: "Certified Genius 🏆", line: "Flawless. You actually listen to me. Shocking." },
+    { min: 1, title: "Certified Bex Expert 🏆", line: "Flawless. You actually listen to me. Shocking." },
     { min: 0.75, title: "Basically a Genius 🧠", line: "Almost perfect. Almost." },
     { min: 0.5, title: "Mid, Honestly 😐", line: "Half right, half stinky." },
-    { min: 0.25, title: "Do You Even Know Yourself? 🤨", line: "Some answers were… creative." },
+    { min: 0.25, title: "Do You Even Know Me? 🤨", line: "Some answers were… creative." },
     { min: 0, title: "Certified Stinky Bum 🦨", line: "Barely a point. On your birthday. Iconic." },
   ];
 
@@ -47,7 +47,7 @@
   // balloon game commentary
   const SKUNK_LINES = [
     "Ew. You popped a skunk. Very on brand 🦨",
-    "That was a skunk. Minus one. Smells about right.",
+    "That was a skunk. Minus two. Smells about right.",
     "Why would you touch the skunk 😭",
     "Skunk popped. Stinky bums stick together, I guess",
   ];
@@ -423,32 +423,44 @@
     $("pop-time").textContent = `⏱ ${Math.max(0, popGame.left).toFixed(1)}s`;
   }
 
+  // 0 at the start of the round, 1 at the end: balloons speed up as time runs out
+  function popProgress() {
+    return Math.min(1, (performance.now() - popGame.began) / (popGame.item.seconds * 1000));
+  }
+
   function startPop() {
     const game = popGame;
-    const began = performance.now();
+    game.began = performance.now();
     $("pop-start").hidden = true;
     game.timers.push(setInterval(() => {
-      game.left = game.item.seconds - (performance.now() - began) / 1000;
+      game.left = game.item.seconds - (performance.now() - game.began) / 1000;
       popStats();
       if (game.left <= 0) endPop(game.count >= game.item.goal);
     }, 100));
-    spawnBalloon();
-    game.timers.push(setInterval(spawnBalloon, 420));
+
+    const spawnLoop = () => {
+      if (game.over) return;
+      spawnBalloon();
+      game.timers.push(setTimeout(spawnLoop, 400 - 150 * popProgress()));
+    };
+    spawnLoop();
   }
 
   function spawnBalloon() {
-    const skunk = Math.random() < 0.18;
+    const item = popGame.item;
+    const skunk = Math.random() < (item.skunks ?? 0.3);
+    const speedUp = 1 - 0.4 * popProgress();
     const b = document.createElement("button");
     b.type = "button";
     b.className = "balloon";
     b.textContent = skunk ? "🦨" : "🎈";
     b.setAttribute("aria-label", skunk ? "Skunk (don't pop it)" : "Balloon");
     b.style.left = 4 + Math.random() * 80 + "%";
-    b.style.setProperty("--d", 2.6 + Math.random() * 1.8 + "s");
-    b.style.setProperty("--sway", (Math.random() - 0.5) * 60 + "px");
+    b.style.setProperty("--d", (1.4 + Math.random()) * speedUp + "s");
+    b.style.setProperty("--sway", (20 + Math.random() * 40) * (Math.random() < 0.5 ? -1 : 1) + "px");
     if (reducedMotion) {
       b.style.bottom = 10 + Math.random() * 70 + "%";
-      setTimeout(() => b.remove(), 1400);
+      setTimeout(() => b.remove(), 1000 * speedUp);
     }
     b.addEventListener("animationend", () => b.remove());
     b.addEventListener("pointerdown", (e) => {
@@ -466,7 +478,7 @@
     b.classList.add("popped");
 
     if (skunk) {
-      game.count = Math.max(0, game.count - 1);
+      game.count = Math.max(0, game.count - (game.item.penalty ?? 2));
       sfx.wrong();
       comment("pop-comment", fresh(SKUNK_LINES));
     } else {
@@ -484,7 +496,10 @@
   function stopPop() {
     if (!popGame) return;
     popGame.over = true;
-    popGame.timers.forEach(clearInterval);
+    popGame.timers.forEach((t) => {
+      clearInterval(t);
+      clearTimeout(t);
+    });
   }
 
   function endPop(won) {

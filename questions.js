@@ -12,37 +12,38 @@
 //
 // Special rounds:
 //   type: "runaway"  a yes/no question where the "no" button runs away
-//   type: "pop"      balloon-popping mini game (goal = balloons, seconds = time limit)
+//   type: "pop"      balloon-popping mini game: goal = balloons to pop, seconds = time
+//                    limit, skunks = share of skunks (0.3 = 30%), penalty = points a skunk costs
 //   type: "hangman"  guess the phrase letter by letter
 const QUESTIONS = [
   {
-    q: "What is Bex's go-to coffee order?",
+    q: "What's my go-to coffee order?",
     options: ["Iced oat latte", "Black, no nonsense", "Matcha, obviously", "Doesn't drink coffee"],
     answer: 3,
-    win: "Correct. You run purely on vibes and audacity ☕🚫",
-    lose: "You don't even DRINK coffee. Wrong about yourself. On your birthday 💀",
+    win: "Correct. I run purely on vibes and audacity ☕🚫",
+    lose: "I don't even DRINK coffee. How do you not know this 💀",
     quips: {
-      "Matcha, obviously": "Matcha?? Who do you think you are, a wellness influencer? 🍵",
+      "Matcha, obviously": "Matcha?? Do I look like a wellness influencer to you? 🍵",
     },
   },
   {
-    q: "If Bex could eat one meal for the rest of forever, what would it be?",
+    q: "If I could eat one meal for the rest of forever, what would it be?",
     options: ["Sushi", "Pasta", "Tacos", "Pizza", "Shawarma", "Adria"],
     answer: 0,
     win: "Sushi. Raw fish, raw talent 🍣",
-    lose: "Wrong. You'd sell me for a salmon roll and we both know it 🍣",
+    lose: "Wrong. I'd sell you for a salmon roll and we both know it 🍣",
     quips: {
       Adria: "We know you think you're a snack, but no 🙄 It's sushi.",
       Shawarma: "Shawarma is a 2am decision, not a personality 🌯",
-      Pizza: "Pizza?? That's the most basic answer possible. Sushi, obviously.",
+      Pizza: "Pizza?? Do I look that basic to you? Sushi, obviously.",
     },
   },
   {
-    q: "What is Bex's dream holiday destination?",
+    q: "What's my dream holiday destination?",
     options: ["Japan", "Italy", "Bali", "Iceland", "With you"],
     answer: 4,
-    win: "Correct. Anywhere is a holiday with me, obviously 💅✈️",
-    lose: "Wrong. The answer was me. It's always me 🙄",
+    win: "Correct. Anywhere is a holiday with you 🥹✈️",
+    lose: "Wrong. The answer was you. It's always you 🙄",
   },
   {
     type: "runaway",
@@ -60,9 +61,11 @@ const QUESTIONS = [
   },
   {
     type: "pop",
-    q: "Bonus round! Pop 10 balloons before time runs out. Don't touch the skunks 🦨",
-    goal: 10,
+    q: "Bonus round! Pop 15 balloons before time runs out. Every skunk costs you 2 🦨",
+    goal: 15,
     seconds: 15,
+    skunks: 0.3,
+    penalty: 2,
     win: "Balloon-popping champion. Finally, a talent 🎈",
     lose: "Defeated by balloons. BALLOONS. 🎈💀",
   },

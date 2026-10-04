@@ -450,7 +450,7 @@ main {
   padding: 6px;
   border: 0;
   background: none;
-  font-size: 2.6rem;
+  font-size: 2.1rem;
   line-height: 1;
   cursor: pointer;
   animation: drift var(--d) linear forwards;
@@ -458,7 +458,10 @@ main {
 }
 .balloon.popped { pointer-events: none; animation: burstOut .3s forwards; }
 @keyframes drift {
-  to { transform: translateY(-410px) translateX(var(--sway)); }
+  25% { transform: translate(var(--sway), -102px); }
+  50% { transform: translate(calc(var(--sway) * -1), -205px); }
+  75% { transform: translate(var(--sway), -307px); }
+  to { transform: translate(0, -410px); }
 }
 @keyframes burstOut {
   to { scale: 1.8; opacity: 0; }
