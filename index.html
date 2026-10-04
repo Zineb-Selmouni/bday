@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bex Trivia</title>
+  <meta name="description" content="A birthday trivia game for Bex.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎂</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=DM+Sans:wght@400;500;700&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,900;1,9..144,600;1,9..144,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="floaters" aria-hidden="true"></div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+  <button id="mute" class="mute" type="button" aria-label="Mute sound">🔊</button>
+
+  <main>
+    <!-- 1. Welcome -->
+    <section id="welcome" class="screen active">
+      <p class="eyebrow">A birthday quiz</p>
+      <h1 class="title">Welcome To<span>Bex Trivia</span></h1>
+      <p class="lede">Questions you <em>should</em> know the answer to.<br>No pressure. (There is pressure.)</p>
+      <div class="actions">
+        <button class="btn btn-primary" id="start" type="button">Let's play</button>
+        <button class="btn btn-ghost" id="nope" type="button">No thanks 🙅</button>
+      </div>
+      <p class="hint"><span id="q-count"></span> questions · no googling · Bex is watching 👀</p>
+    </section>
+
+    <!-- 2. Quiz -->
+    <section id="quiz" class="screen">
+      <div class="quiz-top">
+        <span id="progress-label"></span>
+        <span id="score-label"></span>
+      </div>
+      <div class="progress"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="card" id="card">
+        <h2 id="question"></h2>
+        <div class="options" id="options"></div>
+        <div class="hangman" id="hangman" hidden>
+          <svg class="gallows" id="gallows" viewBox="0 0 120 130" aria-hidden="true">
+            <path class="frame" d="M10 124 H86 M30 124 V8 H80 V22"/>
+            <circle class="part" cx="80" cy="32" r="10"/>
+            <line class="part" x1="80" y1="42" x2="80" y2="80"/>
+            <line class="part" x1="80" y1="52" x2="64" y2="68"/>
+            <line class="part" x1="80" y1="52" x2="96" y2="68"/>
+            <line class="part" x1="80" y1="80" x2="66" y2="104"/>
+            <line class="part" x1="80" y1="80" x2="94" y2="104"/>
+          </svg>
+          <p class="lives" id="lives"></p>
+          <div class="phrase" id="phrase"></div>
+          <p class="commentary" id="hang-comment" aria-live="polite"></p>
+          <div class="keyboard" id="keyboard"></div>
+        </div>
+        <div class="pop" id="pop" hidden>
+          <div class="pop-stats">
+            <span id="pop-count"></span>
+            <span id="pop-time"></span>
+          </div>
+          <div class="arena" id="arena">
+            <button class="btn btn-red" id="pop-start" type="button">Start 🎈</button>
+          </div>
+          <p class="commentary" id="pop-comment" aria-live="polite"></p>
+        </div>
+        <div class="feedback" id="feedback" aria-live="polite">
+          <p class="reaction" id="reaction"></p>
+          <p class="note" id="note"></p>
+          <button class="btn btn-red" id="next" type="button">Next question</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Results -->
+    <section id="results" class="screen">
+      <p class="eyebrow">Final score</p>
+      <div class="big-score"><span id="final-score">0</span><small>/<span id="final-total">0</span></small></div>
+      <h2 class="rank" id="rank"></h2>
+      <p class="lede" id="rank-line"></p>
+      <div class="actions">
+        <button class="btn btn-primary" id="to-cake" type="button">One more thing… 🎁</button>
+        <button class="btn btn-ghost" id="retry" type="button">Try again</button>
+      </div>
+    </section>
+
+    <!-- 4. Cake -->
+    <section id="cake-screen" class="screen">
+      <h2 class="cake-title" id="cake-title">Make a wish, then tap the candles</h2>
+      <svg class="cake" viewBox="0 0 300 260" role="img" aria-label="Birthday cake">
+        <ellipse cx="150" cy="240" rx="136" ry="14" fill="rgba(0,0,0,.25)"/>
+        <ellipse cx="150" cy="233" rx="130" ry="12" fill="#fff6f1"/>
+        <!-- bottom tier -->
+        <rect x="40" y="150" width="220" height="82" rx="12" fill="#a3132a"/>
+        <rect x="40" y="150" width="220" height="18" rx="9" fill="#f6a5b0"/>
+        <g fill="#f6a5b0">
+          <circle cx="54" cy="168" r="9"/><circle cx="82" cy="170" r="7"/><circle cx="108" cy="168" r="9"/>
+          <circle cx="136" cy="171" r="7"/><circle cx="164" cy="168" r="9"/><circle cx="192" cy="170" r="7"/>
+          <circle cx="220" cy="168" r="9"/><circle cx="246" cy="170" r="7"/>
+        </g>
+        <g fill="#fff6f1">
+          <circle cx="70" cy="206" r="4"/><circle cx="100" cy="206" r="4"/><circle cx="130" cy="206" r="4"/>
+          <circle cx="160" cy="206" r="4"/><circle cx="190" cy="206" r="4"/><circle cx="220" cy="206" r="4"/>
+        </g>
+        <!-- top tier -->
+        <rect x="75" y="90" width="150" height="64" rx="10" fill="#d7263d"/>
+        <rect x="75" y="90" width="150" height="14" rx="7" fill="#fff6f1"/>
+        <g fill="#fff6f1">
+          <circle cx="86" cy="104" r="7"/><circle cx="110" cy="106" r="5"/><circle cx="132" cy="104" r="7"/>
+          <circle cx="156" cy="106" r="5"/><circle cx="178" cy="104" r="7"/><circle cx="200" cy="106" r="5"/>
+          <circle cx="216" cy="104" r="6"/>
+        </g>
+        <g id="candles"></g>
+      </svg>
+      <p class="hint" id="candle-hint"></p>
+      <div class="bday-message" id="bday-message">
+        <h1 class="title"><span>Happy Birthday, Bex!</span></h1>
+        <button class="envelope" id="envelope" type="button">
+          <span class="envelope-icon" aria-hidden="true">💌</span>
+          <span>You've got a letter. Tap to open</span>
+        </button>
+        <article class="paper" id="letter" hidden>
+          <p class="paper-greeting" id="letter-greeting"></p>
+          <div id="letter-body"></div>
+          <p class="paper-signoff" id="letter-signoff"></p>
+          <p class="paper-name" id="letter-name"></p>
+          <div class="paper-ps" id="letter-ps"></div>
+        </article>
+        <button class="btn btn-ghost" id="replay" type="button">Play again</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="questions.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
