@@ -12,8 +12,6 @@
 //
 // Special rounds:
 //   type: "runaway"  a yes/no question where the "no" button runs away
-//   type: "pop"      balloon-popping mini game: goal = balloons to pop, seconds = time
-//                    limit, skunks = share of skunks (0.3 = 30%), penalty = points a skunk costs
 //   type: "hangman"  guess the phrase letter by letter
 const QUESTIONS = [
   {
@@ -58,16 +56,6 @@ const QUESTIONS = [
     answer: 0,
     win: "😂😂😂 Correct. As if you could forget",
     lose: "Wrong. 😂 is in literally every message I send you 😂",
-  },
-  {
-    type: "pop",
-    q: "Bonus round! Pop 15 balloons before time runs out. Every skunk costs you 2 🦨",
-    goal: 15,
-    seconds: 15,
-    skunks: 0.3,
-    penalty: 2,
-    win: "Balloon-popping champion. Finally, a talent 🎈",
-    lose: "Defeated by balloons. BALLOONS. 🎈💀",
   },
   {
     type: "hangman",

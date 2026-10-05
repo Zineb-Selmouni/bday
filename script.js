@@ -44,20 +44,6 @@
     "The truth is slowly coming out 🫣",
   ];
 
-  // balloon game commentary
-  const SKUNK_LINES = [
-    "Ew. You popped a skunk. Very on brand 🦨",
-    "That was a skunk. Minus two. Smells about right.",
-    "Why would you touch the skunk 😭",
-    "Skunk popped. Stinky bums stick together, I guess",
-  ];
-  const POP_LINES = [
-    "Pop pop pop 🎈",
-    "Look at those reflexes",
-    "Fastest thumbs in the west",
-    "Okay, balloon assassin 😳",
-  ];
-
   // like pick(), but never the same line twice in a row
   const lastPicked = new Map();
   function fresh(list) {
@@ -89,11 +75,19 @@
   /* ---------- sound ---------- */
   let audio;
   let muted = false;
+  let volume = 0.45; // 0 to 1, set by the slider in the top corner
+  try {
+    const saved = parseFloat(localStorage.getItem("bex-volume"));
+    if (saved >= 0 && saved <= 1) volume = saved;
+  } catch (e) {
+    /* storage blocked: use the default */
+  }
 
   function tone(freqs, step, type = "sine") {
-    if (muted) return;
+    if (muted || volume === 0) return;
     try {
       audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      if (audio.state === "suspended") audio.resume();
       freqs.forEach((f, i) => {
         const osc = audio.createOscillator();
         const gain = audio.createGain();
@@ -101,7 +95,7 @@
         osc.type = type;
         osc.frequency.value = f;
         gain.gain.setValueAtTime(0.0001, t);
-        gain.gain.exponentialRampToValueAtTime(0.18, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.4 * volume, t + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.0001, t + step * 1.6);
         osc.connect(gain).connect(audio.destination);
         osc.start(t);
@@ -120,11 +114,73 @@
     fanfare: () => tone([523, 659, 784, 1047, 784, 1047], 0.13),
   };
 
-  $("mute").addEventListener("click", () => {
-    muted = !muted;
-    $("mute").textContent = muted ? "🔇" : "🔊";
-    $("mute").setAttribute("aria-label", muted ? "Unmute sound" : "Mute sound");
+  /* ---------- background music ---------- */
+  // Browsers block sound until the first tap/click/keypress, so try right away
+  // and otherwise start the song on the first interaction.
+  const music = $("music");
+  const slider = $("volume");
+
+  // iPhones ignore audio.volume, so on the live site the song goes through Web
+  // Audio, whose gain works everywhere. Not when opened as a local file: there
+  // the browser's security rules make Web Audio play silence.
+  let musicGain;
+  function connectMusicGain() {
+    if (musicGain || !location.protocol.startsWith("http")) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      musicGain = audio.createGain();
+      audio.createMediaElementSource(music).connect(musicGain).connect(audio.destination);
+    } catch (e) {
+      musicGain = null;
+    }
+  }
+
+  function playMusic() {
+    if (muted || volume === 0) return;
+    connectMusicGain();
+    applyVolume();
+    if (audio && audio.state === "suspended") audio.resume();
+    music.play().catch(() => {});
+  }
+
+  function applyVolume() {
+    const silent = muted || volume === 0;
+    if (musicGain) {
+      musicGain.gain.value = volume;
+      music.volume = 1;
+    } else {
+      music.volume = volume;
+    }
+    slider.value = Math.round(volume * 100);
+    slider.style.setProperty("--fill", (muted ? 0 : volume * 100) + "%");
+    $("mute").textContent = silent ? "🔇" : volume < 0.5 ? "🔉" : "🔊";
+    $("mute").setAttribute("aria-label", silent ? "Unmute sound" : "Mute sound");
+    if (silent) music.pause();
+  }
+
+  slider.addEventListener("input", () => {
+    volume = slider.value / 100;
+    muted = false;
+    applyVolume();
+    playMusic();
+    try {
+      localStorage.setItem("bex-volume", volume);
+    } catch (e) {
+      /* not saved, no problem */
+    }
   });
+
+  $("mute").addEventListener("click", () => {
+    muted = !muted && volume > 0;
+    if (!muted && volume === 0) volume = 0.45; // unmuting from zero: bring it back up
+    applyVolume();
+    playMusic();
+  });
+
+  applyVolume();
+  playMusic();
+  document.addEventListener("pointerdown", playMusic, { once: true });
+  document.addEventListener("keydown", playMusic, { once: true });
 
   /* ---------- floating background ---------- */
   const FLOATERS = ["❤️", "🎈", "🌹", "🍒", "💋", "✨"];
@@ -294,16 +350,13 @@
     const item = QUESTIONS[index];
     const type = item.type || "choice";
     answered = false;
-    stopPop();
     updateTop(0);
     $("question").textContent = item.q;
     $("options").hidden = type !== "choice" && type !== "runaway";
     $("hangman").hidden = type !== "hangman";
-    $("pop").hidden = type !== "pop";
     $("reaction").classList.remove("shout");
 
     if (type === "hangman") renderHangman(item);
-    else if (type === "pop") renderPop(item);
     else if (type === "runaway") renderRunaway(item);
     else renderOptions(item);
 
@@ -405,109 +458,6 @@
       no.querySelector(".label").textContent = item.no[Math.min(n, item.no.length - 1)];
       yes.style.transform = `scale(${Math.min(1 + n * 0.06, 1.35)})`;
     });
-  }
-
-  /* ---------- balloon pop ---------- */
-  let popGame;
-
-  function renderPop(item) {
-    $("arena").querySelectorAll(".balloon").forEach((b) => b.remove());
-    $("pop-start").hidden = false;
-    $("pop-comment").textContent = "";
-    popGame = { item, count: 0, left: item.seconds, timers: [], over: false };
-    popStats();
-  }
-
-  function popStats() {
-    $("pop-count").textContent = `🎈 ${popGame.count} / ${popGame.item.goal}`;
-    $("pop-time").textContent = `⏱ ${Math.max(0, popGame.left).toFixed(1)}s`;
-  }
-
-  // 0 at the start of the round, 1 at the end: balloons speed up as time runs out
-  function popProgress() {
-    return Math.min(1, (performance.now() - popGame.began) / (popGame.item.seconds * 1000));
-  }
-
-  function startPop() {
-    const game = popGame;
-    game.began = performance.now();
-    $("pop-start").hidden = true;
-    game.timers.push(setInterval(() => {
-      game.left = game.item.seconds - (performance.now() - game.began) / 1000;
-      popStats();
-      if (game.left <= 0) endPop(game.count >= game.item.goal);
-    }, 100));
-
-    const spawnLoop = () => {
-      if (game.over) return;
-      spawnBalloon();
-      game.timers.push(setTimeout(spawnLoop, 400 - 150 * popProgress()));
-    };
-    spawnLoop();
-  }
-
-  function spawnBalloon() {
-    const item = popGame.item;
-    const skunk = Math.random() < (item.skunks ?? 0.3);
-    const speedUp = 1 - 0.4 * popProgress();
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "balloon";
-    b.textContent = skunk ? "🦨" : "🎈";
-    b.setAttribute("aria-label", skunk ? "Skunk (don't pop it)" : "Balloon");
-    b.style.left = 4 + Math.random() * 80 + "%";
-    b.style.setProperty("--d", (1.4 + Math.random()) * speedUp + "s");
-    b.style.setProperty("--sway", (20 + Math.random() * 40) * (Math.random() < 0.5 ? -1 : 1) + "px");
-    if (reducedMotion) {
-      b.style.bottom = 10 + Math.random() * 70 + "%";
-      setTimeout(() => b.remove(), 1000 * speedUp);
-    }
-    b.addEventListener("animationend", () => b.remove());
-    b.addEventListener("pointerdown", (e) => {
-      e.preventDefault();
-      popBalloon(b, skunk);
-    });
-    b.addEventListener("click", () => popBalloon(b, skunk));
-    $("arena").appendChild(b);
-  }
-
-  function popBalloon(b, skunk) {
-    const game = popGame;
-    if (game.over || b.classList.contains("popped")) return;
-    b.style.transform = getComputedStyle(b).transform; // freeze it where it was hit
-    b.classList.add("popped");
-
-    if (skunk) {
-      game.count = Math.max(0, game.count - (game.item.penalty ?? 2));
-      sfx.wrong();
-      comment("pop-comment", fresh(SKUNK_LINES));
-    } else {
-      game.count++;
-      sfx.pop();
-      const r = b.getBoundingClientRect();
-      burst(r.left + r.width / 2, r.top + r.height / 2, 14);
-      if (game.count % 3 === 0) comment("pop-comment", fresh(POP_LINES));
-    }
-
-    popStats();
-    if (game.count >= game.item.goal) endPop(true);
-  }
-
-  function stopPop() {
-    if (!popGame) return;
-    popGame.over = true;
-    popGame.timers.forEach((t) => {
-      clearInterval(t);
-      clearTimeout(t);
-    });
-  }
-
-  function endPop(won) {
-    if (popGame.over) return;
-    stopPop();
-    $("arena").querySelectorAll(".balloon").forEach((b) => (b.style.animationPlayState = "paused"));
-    $("pop-comment").textContent = won ? "" : `Only ${popGame.count}. Embarrassing.`;
-    settle(won, $("arena"));
   }
 
   /* ---------- hangman ---------- */
@@ -735,7 +685,6 @@
   $("start").addEventListener("click", restart);
   $("next").addEventListener("click", next);
   $("retry").addEventListener("click", restart);
-  $("pop-start").addEventListener("click", startPop);
   $("envelope").addEventListener("click", openLetter);
   $("to-cake").addEventListener("click", () => {
     buildCake();
