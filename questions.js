@@ -59,7 +59,7 @@ const QUESTIONS = [
   },
   {
     type: "hangman",
-    q: "Something you always call me… that you should really admit about yourself 🙊",
+    q: "Something I always call you… that you should really admit about yourself 🙊",
     phrase: "I am a stinky bum",
     win: "YES U ARE A STINKY BUM 🦨💩",
     lose: "Denial won't save you. You ARE a stinky bum 💩",
